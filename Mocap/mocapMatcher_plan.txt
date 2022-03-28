@@ -1,0 +1,24 @@
+Mocap Data to Advanced Skeleton
+
+[Use MotionBuilder Template]
+
+Joints
+AdvancedSkeleton | Other
+
+RootX_M | Hips
+IKSpine3_M | Spine2
+
+PoleArm_R | RightForeArm
+PoleArm_L | LeftForeArm
+IKArm_R | RightHand
+IKArm_L | LeftHand
+
+PoleLeg_R | RightUpLeg
+PoleLeg_L | LeftUpLeg
+IKLeg_R | RightFoot
+IKLeg_L | LeftFoot
+
+1. Create locators
+2. Parent Constraint (locators to HIK joints)
+3. Parent Constraint (ADV controllers to locators)
+4. Edit-Bake Simulation
