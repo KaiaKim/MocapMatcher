@@ -32,6 +32,8 @@ class mocapMatcher():
         self.legIkChecker = None
         self.spineFkChecker = None
         self.spineIkChecker = None
+        
+        self.advCtrlList = []
 
         self.createWindow()
 
@@ -115,6 +117,8 @@ class mocapMatcher():
         cmds.button( label='2: Attach Locs to MoCap Joints', width=170, c=self.attachLocsToMoCapJoints )
         cmds.button( label='3: Attach ADV Ctrls to Locs', width=170, c=self.attachAdvCtrlsToLocs )
         cmds.button( label='4: Bake', width=170, c=self.bakeMoCapSimulation )
+        
+        cmds.button( label='Helper: Select ADV Ctrls', c=lambda x: cmds.select(self.advCtrlList))
 
         cmds.showWindow()
 
@@ -156,7 +160,10 @@ class mocapMatcher():
             ns = sel.split('Ctrl_')[0] + 'Ctrl_'
         else:
             ns = ''
-        
+
+        if ':' in sel:
+            ns = ns.split(':')[1]
+            
         cmds.textFieldButtonGrp(self.HikPrefix, e=True, tx=ns)
     
     def queryText(self,x):
@@ -218,12 +225,16 @@ class mocapMatcher():
             cmds.parentConstraint( moCapJnt, nulGrp, maintainOffset=False )
 
     def attachAdvCtrlsToLocs(self, _):
+        self.bakeList = []
+        self.advCtrlList = []
         for i in self.nameList:
             loc = i['name']+'_loc'
             offsetGrp = i['name']+'_loc_offset'
             moCapJnt = self.queryTextButGrp(self.nameSpace1) + self.queryTextButGrp(self.HikPrefix) + self.queryText(i['field1'])#name space + joints
             advCtrl = self.queryTextButGrp(self.nameSpace2)+ self.queryText(i['field2'])#name space + controllers
-
+            
+            self.advCtrlList.append(advCtrl)
+            
             if i['part']=='arm':
                 if self.queryCheckBox(self.armFkChecker)==True:
                     if i['type']=='FK':
