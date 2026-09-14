@@ -230,6 +230,10 @@ class mocapMatcher():
 
             if i['part']=='spine':
                 if i['type']=='FK':
+                    try:
+                        cmds.setAttr(advCtrl+'.inbetweenVis', 1) #show the hidden ctrls
+                    except:
+                        pass
                     self.constTR(loc, advCtrl)
                 elif i['type']=='IK':
                     self.constTR(loc, advCtrl)
