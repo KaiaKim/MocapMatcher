@@ -9,13 +9,12 @@ class mocapMatcher():
         self.winTitle = 'Kaia\'s Mocap Matcher'
         self.winName = 'kaiaMocapMatcher'
 
-        self.nameSpace1 = None
-        self.nameSpace2 = None
+        self.originJntNameSpace = None
+        self.targetCtrlNameSpace = None
         
         
         basePath = mayascripts+'/Kaia_MocapMatcher/'
         advCtrlPath = basePath + 'ADV_ctrl_names.json'
-        hikJntPath = basePath + 'HIK_jnt_names.json'
         advJntPath = basePath + 'ADV_jnt_names.json'
 
         with open(advCtrlPath, 'r') as read_file:
@@ -23,16 +22,13 @@ class mocapMatcher():
             self.nameList = advData['nameList']
             self.ADVhandleList = advData['ADVhandleList']
 
-        with open(hikJntPath, 'r') as read_file:
-            self.hikJntByName = {i['name']: i['jnt'] for i in json.load(read_file)['nameList']}
-
         with open(advJntPath, 'r') as read_file:
-            self.advJntByName = {i['name']: i['jnt'] for i in json.load(read_file)['nameList']}
+            self.originJntByName = {i['name']: i['jnt'] for i in json.load(read_file)['nameList']}
 
         ###
         self.bakeList = []
         
-        self.advCtrlList = []
+        self.targetCtrlList = []
 
         self.createWindow()
 
@@ -47,44 +43,26 @@ class mocapMatcher():
         cmds.scrollLayout( 'scorllLayout') #makes your entire layout scrollable #first - main layout
         cmds.columnLayout( adjustableColumn=True ) #second layout - attaches to the main layout
 
-        cmds.frameLayout( label='Templates', collapsable=True, collapse=False )
-        cmds.columnLayout( rowSpacing = 10, cat=('left',10), h=90 ) #fourth alyout - frame layout
-
-        cmds.text(label='Automatically fill out the text fields for you')
-        cmds.button(label='Human IK to Advanced Skeleton', c=self.loadTemplate )
-        cmds.button(label='ADV to ADV', c=self.loadTemplateADV )
-
-        cmds.setParent( '..' ) #this make the framelayout attach to the column layout #move hirearchilly up # '..' : previous
-        cmds.setParent( '..' )
-
         cmds.frameLayout( label='NameSpace', collapsable=True, collapse=False )
         cmds.columnLayout( h=55 )
         
-        self.nameSpace1 = cmds.textFieldButtonGrp( l='Mo Cap', bl='detect from selected', bc=self.detectNameSpace1, cal=(10,'left'), cw3=(100,120,100))
-        self.nameSpace2 = cmds.textFieldButtonGrp( l='Advanced Skeleton', bl='detect from selected', bc=self.detectNameSpace2, cal=(10,'left'), cw3=(100,120,100))
+        self.originJntNameSpace = cmds.textFieldButtonGrp( l='Origin Jnts', bl='detect from selected', bc=self.detectOriginJntNameSpace, cal=(10,'left'), cw3=(100,120,100))
+        self.targetCtrlNameSpace = cmds.textFieldButtonGrp( l='Target Ctrls', bl='detect from selected', bc=self.detectTargetCtrlNameSpace, cal=(10,'left'), cw3=(100,120,100))
 
 
         cmds.setParent('..')
         cmds.setParent('..')
-        
-        cmds.frameLayout( label='Prefix', collapsable=True, collapse=True )
-        cmds.columnLayout( h=30 )
 
-        self.HikPrefix = cmds.textFieldButtonGrp( l='Human IK', bl='detect from selected', bc=self.detectHikPrefix, cal=(10,'left'), cw3=(100,120,100))
-
-        cmds.setParent('..')
-        cmds.setParent('..')
-
-
-        cmds.frameLayout( label='Joints / Controllers', collapsable=True, collapse=True )
+        cmds.frameLayout( label='Origin Jnts / Target Ctrls', collapsable=True, collapse=True )
 
         cmds.gridLayout(numberOfColumns=3, cellWidthHeight=(120, 20) ) #fourth alyout - frame layout
 
         cmds.text(label=' ')
-        cmds.text(label='Mo Cap')
-        cmds.text(label='AdvancedSkeleton')
+        cmds.text(label='Origin Jnts')
+        cmds.text(label='Target Ctrls')
 
         self.createTextFields() #this is an iterator for creating text fields
+        self.fillNames()
 
         cmds.setParent('..')
         cmds.setParent('..')
@@ -92,13 +70,13 @@ class mocapMatcher():
         cmds.frameLayout( label='Functions', collapsable=True, collapse=False)
         cmds.columnLayout(rowSpacing = 10, cat=('left',10))
 
-        cmds.text(l='Transfer MoCap data using parent constraints')
+        cmds.text(l='Transfer animation using parent constraints')
         cmds.button( label='1: Create Locators', width=170, c=self.createLocators )
-        cmds.button( label='2: Attach Locs to MoCap Joints', width=170, c=self.attachLocsToMoCapJoints )
-        cmds.button( label='3: Attach ADV Ctrls to Locs', width=170, c=self.attachAdvCtrlsToLocs )
+        cmds.button( label='2: Attach Locs to Origin Jnts', width=170, c=self.attachLocsToOriginJnts )
+        cmds.button( label='3: Attach Target Ctrls to Locs', width=170, c=self.attachTargetCtrlsToLocs )
         cmds.button( label='4: Bake', width=170, c=self.bakeMoCapSimulation )
         
-        cmds.button( label='Helper: Select ADV Ctrls', c=lambda x: cmds.select(self.advCtrlList))
+        cmds.button( label='Helper: Select Target Ctrls', c=lambda x: cmds.select(self.targetCtrlList))
 
         cmds.showWindow()
 
@@ -116,35 +94,23 @@ class mocapMatcher():
             i['field2'] = cmds.textField()
             
 
-    def detectNameSpace1(self):
+    def detectOriginJntNameSpace(self):
         sel=cmds.ls(sl=True)[0] #get selection. use first when multiple selected
         if ':' in sel:
             ns = sel.split(':')[0] + ':'
         else:
             ns = ''
         
-        cmds.textFieldButtonGrp(self.nameSpace1, e=True, tx=ns)
+        cmds.textFieldButtonGrp(self.originJntNameSpace, e=True, tx=ns)
         
-    def detectNameSpace2(self):
+    def detectTargetCtrlNameSpace(self):
         sel=cmds.ls(sl=True)[0] #get selection. use first when multiple selected
         if ':' in sel:
             ns = sel.split(':')[0] + ':'
         else:
             ns = ''
         
-        cmds.textFieldButtonGrp(self.nameSpace2, e=True, tx=ns)
-            
-    def detectHikPrefix(self):
-        sel=cmds.ls(sl=True)[0] #get selection. use first when multiple selected
-        if 'Ctrl_' in sel:
-            ns = sel.split('Ctrl_')[0] + 'Ctrl_'
-        else:
-            ns = ''
-
-        if ':' in sel:
-            ns = ns.split(':')[1]
-            
-        cmds.textFieldButtonGrp(self.HikPrefix, e=True, tx=ns)
+        cmds.textFieldButtonGrp(self.targetCtrlNameSpace, e=True, tx=ns)
     
     def queryText(self,x):
         y = cmds.textField( x, q=True, tx=True)
@@ -154,16 +120,10 @@ class mocapMatcher():
         y = cmds.textFieldButtonGrp(x, q=True, tx=True)
         return y
 
-    def loadTemplate(self,_):
+    def fillNames(self):
         for i in self.nameList:
-            cmds.textField(i['field1'], e=True, tx=self.hikJntByName.get(i['name'], '') )
+            cmds.textField(i['field1'], e=True, tx=self.originJntByName.get(i['name'], '') )
             cmds.textField(i['field2'], e=True, tx=i['ctrl'] )
-
-    def loadTemplateADV(self,_):
-        for i in self.nameList:
-            cmds.textField(i['field1'], e=True, tx=self.advJntByName.get(i['name'], '') )
-            cmds.textField(i['field2'], e=True, tx=i['ctrl'] )
-        cmds.textFieldButtonGrp(self.HikPrefix, e=True, tx='')
     
     def createLocators(self,_):
         MatchGrp = cmds.group(empty=True, name = 'mocapMatch_grp')#create a group to put in the locators
@@ -173,87 +133,87 @@ class mocapMatcher():
             nulGrp = cmds.group(offsetGrp, name=i['name']+'_loc_nul')#create nul group
             cmds.parent(nulGrp,MatchGrp)#parent locators to mocapMatch_grp
 
-    def attachLocsToMoCapJoints(self,_):
+    def attachLocsToOriginJnts(self,_):
         self.cRoot = 'Group'
         for i in self.nameList:
-            moCapJnt = self.queryTextButGrp(self.nameSpace1) + self.queryTextButGrp(self.HikPrefix) + self.queryText(i['field1'])#name space + joints
+            originJnt = self.queryTextButGrp(self.originJntNameSpace) + self.queryText(i['field1'])#name space + joints
             nulGrp = i['name']+'_loc_nul'
             #attach nul group instead of actual locators, allowing offset offsets
-            const1 = cmds.parentConstraint( moCapJnt, self.queryTextButGrp(self.nameSpace2)+self.cRoot, nulGrp, maintainOffset=False )[0]
+            const1 = cmds.parentConstraint( originJnt, self.queryTextButGrp(self.targetCtrlNameSpace)+self.cRoot, nulGrp, maintainOffset=False )[0]
             cmds.setAttr(const1+'.'+self.cRoot+'W1', 0)
 
-    def attachAdvCtrlsToLocs(self, _):
+    def attachTargetCtrlsToLocs(self, _):
         self.bakeList = []
-        self.advCtrlList = []
+        self.targetCtrlList = []
         
         cmds.currentTime(0)
         for i in self.nameList:
-            moCapJnt = self.queryTextButGrp(self.nameSpace1) + self.queryTextButGrp(self.HikPrefix) + self.queryText(i['field1'])
-            cmds.rotate(0, 0, 0, moCapJnt)
-            cmds.setKeyframe(moCapJnt, at=['rx','ry','rz'], t=0)
+            originJnt = self.queryTextButGrp(self.originJntNameSpace) + self.queryText(i['field1'])
+            cmds.rotate(0, 0, 0, originJnt)
+            cmds.setKeyframe(originJnt, at=['rx','ry','rz'], t=0)
 
         for i in self.nameList:
             loc = i['name']+'_loc'
             offsetGrp = i['name']+'_loc_offset'
-            moCapJnt = self.queryTextButGrp(self.nameSpace1) + self.queryTextButGrp(self.HikPrefix) + self.queryText(i['field1'])#name space + joints
-            advCtrl = self.queryTextButGrp(self.nameSpace2)+ self.queryText(i['field2'])#name space + controllers
+            originJnt = self.queryTextButGrp(self.originJntNameSpace) + self.queryText(i['field1'])#name space + joints
+            targetCtrl = self.queryTextButGrp(self.targetCtrlNameSpace)+ self.queryText(i['field2'])#name space + controllers
             
-            self.advCtrlList.append(advCtrl)
+            self.targetCtrlList.append(targetCtrl)
             
             if i['part']=='arm':
                 if i['type']=='FK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
                 elif i['type']=='IK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
                 elif i['type']=='pole':
-                    cmds.setAttr(advCtrl+'.followMain',10) #pole follow off, it might create weird double transform when it's on
-                    cmds.setAttr(advCtrl+'.followRoot',0) #pole follow off, it might create weird double transform when it's on
-                    cmds.setAttr(advCtrl+'.followChest',0) #pole follow off, it might create weird double transform when it's on
-                    cmds.setAttr(advCtrl+'.followArm',0) #pole follow off, it might create weird double transform when it's on
-                    self.offsetPole(offsetGrp, moCapJnt,(0,0,0))
-                    self.constTR(loc, advCtrl)
+                    cmds.setAttr(targetCtrl+'.followMain',10) #pole follow off, it might create weird double transform when it's on
+                    cmds.setAttr(targetCtrl+'.followRoot',0) #pole follow off, it might create weird double transform when it's on
+                    cmds.setAttr(targetCtrl+'.followChest',0) #pole follow off, it might create weird double transform when it's on
+                    cmds.setAttr(targetCtrl+'.followArm',0) #pole follow off, it might create weird double transform when it's on
+                    self.offsetPole(offsetGrp, originJnt,(0,0,0))
+                    self.constTR(loc, targetCtrl)
 
             if i['part']=='leg':
                 if i['type']=='FK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
                 elif i['type']=='IK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
                 elif i['type']=='pole':
-                    cmds.setAttr(advCtrl+'.followMain',10) #pole follow off
-                    cmds.setAttr(advCtrl+'.followRoot',0) #pole follow off
-                    cmds.setAttr(advCtrl+'.followLeg',0) #pole follow off
+                    cmds.setAttr(targetCtrl+'.followMain',10) #pole follow off
+                    cmds.setAttr(targetCtrl+'.followRoot',0) #pole follow off
+                    cmds.setAttr(targetCtrl+'.followLeg',0) #pole follow off
                     if '_l' in i['name']:
-                        self.offsetPole(offsetGrp, moCapJnt,(0,0,0)) #0, -30, 0
+                        self.offsetPole(offsetGrp, originJnt,(0,0,0)) #0, -30, 0
                     elif '_r' in i['name']:
-                        self.offsetPole(offsetGrp, moCapJnt,(0,0,0)) #0, 30, 0
-                    self.constTR(loc, advCtrl)
+                        self.offsetPole(offsetGrp, originJnt,(0,0,0)) #0, 30, 0
+                    self.constTR(loc, targetCtrl)
 
             if i['part']=='spine':
                 if i['type']=='FK':
                     try:
-                        cmds.setAttr(advCtrl+'.inbetweenVis', 1) #show the hidden ctrls
+                        cmds.setAttr(targetCtrl+'.inbetweenVis', 1) #show the hidden ctrls
                     except:
                         pass
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
                 elif i['type']=='IK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
                 elif i['type']=='pole':
-                    self.offsetPole(offsetGrp, moCapJnt)
-                    self.constTR(loc, advCtrl)
+                    self.offsetPole(offsetGrp, originJnt)
+                    self.constTR(loc, targetCtrl)
 
             if i['part']=='shoulder':
                 if i['type']=='FK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
 
             if i['part']=='finger':
                 if i['type']=='FK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
             
             if i['part']!='arm' and i['part']!='leg' and i['part']!='spine' and i['part']!='finger':
                 if i['type']=='FK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
                 if i['type']=='IK':
-                    self.constTR(loc, advCtrl)
+                    self.constTR(loc, targetCtrl)
 
     def offsetPole(self, grp, jnt,pos):
         cmds.move(pos[0],pos[1],pos[2], grp, relative=True, objectSpace=True)
@@ -279,5 +239,4 @@ class mocapMatcher():
 
 
 #-----------------------------------------------------3.execute-------------------------------------------------------------------
-
 
