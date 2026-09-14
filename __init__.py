@@ -16,6 +16,7 @@ class mocapMatcher():
         basePath = mayascripts+'/Kaia_MocapMatcher/'
         advCtrlPath = basePath + 'ADV_ctrl_names.json'
         advJntPath = basePath + 'ADV_jnt_names.json'
+        self.cachePath = basePath + 'namespace_cache.json'
 
         with open(advCtrlPath, 'r') as read_file:
             advData = json.load(read_file)
@@ -48,6 +49,10 @@ class mocapMatcher():
         
         self.originJntNameSpace = cmds.textFieldButtonGrp( l='Origin Jnts', bl='detect from selected', bc=self.detectOriginJntNameSpace, cal=(10,'left'), cw3=(100,120,100))
         self.targetCtrlNameSpace = cmds.textFieldButtonGrp( l='Target Ctrls', bl='detect from selected', bc=self.detectTargetCtrlNameSpace, cal=(10,'left'), cw3=(100,120,100))
+
+        cache = self.loadNamespaceCache()
+        cmds.textFieldButtonGrp(self.originJntNameSpace, e=True, tx=cache.get('originJnt', ''))
+        cmds.textFieldButtonGrp(self.targetCtrlNameSpace, e=True, tx=cache.get('targetCtrl', ''))
 
 
         cmds.setParent('..')
@@ -102,6 +107,7 @@ class mocapMatcher():
             ns = ''
         
         cmds.textFieldButtonGrp(self.originJntNameSpace, e=True, tx=ns)
+        self.saveNamespaceCache()
         
     def detectTargetCtrlNameSpace(self):
         sel=cmds.ls(sl=True)[0] #get selection. use first when multiple selected
@@ -111,6 +117,7 @@ class mocapMatcher():
             ns = ''
         
         cmds.textFieldButtonGrp(self.targetCtrlNameSpace, e=True, tx=ns)
+        self.saveNamespaceCache()
     
     def queryText(self,x):
         y = cmds.textField( x, q=True, tx=True)
@@ -119,6 +126,21 @@ class mocapMatcher():
     def queryTextButGrp(self,x):
         y = cmds.textFieldButtonGrp(x, q=True, tx=True)
         return y
+
+    def loadNamespaceCache(self):
+        try:
+            with open(self.cachePath, 'r') as read_file:
+                return json.load(read_file)
+        except:
+            return {'originJnt': '', 'targetCtrl': ''}
+
+    def saveNamespaceCache(self):
+        data = {
+            'originJnt': self.queryTextButGrp(self.originJntNameSpace),
+            'targetCtrl': self.queryTextButGrp(self.targetCtrlNameSpace),
+        }
+        with open(self.cachePath, 'w') as write_file:
+            json.dump(data, write_file)
 
     def fillNames(self):
         for i in self.nameList:
@@ -134,6 +156,7 @@ class mocapMatcher():
             cmds.parent(nulGrp,MatchGrp)#parent locators to mocapMatch_grp
 
     def attachLocsToOriginJnts(self,_):
+        self.saveNamespaceCache()
         self.cRoot = 'Group'
         for i in self.nameList:
             originJnt = self.queryTextButGrp(self.originJntNameSpace) + self.queryText(i['field1'])#name space + joints
@@ -143,6 +166,7 @@ class mocapMatcher():
             cmds.setAttr(const1+'.'+self.cRoot+'W1', 0)
 
     def attachTargetCtrlsToLocs(self, _):
+        self.saveNamespaceCache()
         self.bakeList = []
         self.targetCtrlList = []
         
