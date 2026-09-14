@@ -31,13 +31,6 @@ class mocapMatcher():
 
         ###
         self.bakeList = []
-
-        self.armFkChecker = None
-        self.armIkChecker = None
-        self.legFkChecker = None
-        self.legIkChecker = None
-        self.spineFkChecker = None
-        self.spineIkChecker = None
         
         self.advCtrlList = []
 
@@ -93,28 +86,6 @@ class mocapMatcher():
 
         self.createTextFields() #this is an iterator for creating text fields
 
-        cmds.setParent('..')
-        cmds.setParent('..')
-
-        cmds.frameLayout( label='FK IK', collapsable=True, collapse=False)
-        cmds.gridLayout( numberOfColumns=2, cellWidthHeight=(170,80) )
-        
-        cmds.gridLayout( numberOfColumns=2, cellWidthHeight=(80,20) )
-
-        self.armFkChecker = cmds.checkBox( label = 'Arm FK', value=True)
-        self.armIkChecker = cmds.checkBox( label = 'Arm IK', value=False)
-        self.legFkChecker = cmds.checkBox( label = 'Leg FK', value=False)
-        self.legIkChecker = cmds.checkBox( label = 'Leg IK', value=True)
-        self.spineFkChecker = cmds.checkBox( label = 'Spine FK', value=True)
-        self.spineIkChecker = cmds.checkBox( label = 'Spine IK', value=False)
-        
-        cmds.setParent('..')
-        cmds.columnLayout(rowSpacing = 7)
-        
-        cmds.text( label='Advanced Skeleton only')
-        cmds.button( label='Set Handles', c=self.setHandlesADV)
-        
-        cmds.setParent('..')
         cmds.setParent('..')
         cmds.setParent('..')
 
@@ -183,10 +154,6 @@ class mocapMatcher():
         y = cmds.textFieldButtonGrp(x, q=True, tx=True)
         return y
 
-    def queryCheckBox(self, x):
-        y = cmds.checkBox( x, q=True, v=True)
-        return y
-
     def loadTemplate(self,_):
         for i in self.nameList:
             cmds.textField(i['field1'], e=True, tx=self.hikJntByName.get(i['name'], '') )
@@ -197,31 +164,6 @@ class mocapMatcher():
             cmds.textField(i['field1'], e=True, tx=self.advJntByName.get(i['name'], '') )
             cmds.textField(i['field2'], e=True, tx=i['ctrl'] )
         cmds.textFieldButtonGrp(self.HikPrefix, e=True, tx='')
-
-    def setHandlesADV(self,_):
-        for i in self.ADVhandleList:
-            hdl = self.queryTextButGrp(self.nameSpace2)+i['handle']
-            
-            if i['type']=='arm':
-                if self.queryCheckBox(self.armIkChecker)==True:
-                    attr=10
-                elif self.queryCheckBox(self.armFkChecker)==True:
-                    attr=0
-                
-            if i['type']=='leg':
-                if self.queryCheckBox(self.legIkChecker)==True:
-                    attr=10
-                elif self.queryCheckBox(self.legFkChecker)==True:
-                    attr=0
-                    
-            if i['type']=='spine':
-                if self.queryCheckBox(self.spineIkChecker)==True:
-                    attr=10
-                elif self.queryCheckBox(self.spineFkChecker)==True:
-                    attr=0
-            
-            cmds.setAttr(hdl+'.FKIKBlend', attr)
-            
     
     def createLocators(self,_):
         MatchGrp = cmds.group(empty=True, name = 'mocapMatch_grp')#create a group to put in the locators
@@ -259,42 +201,41 @@ class mocapMatcher():
             self.advCtrlList.append(advCtrl)
             
             if i['part']=='arm':
-                if self.queryCheckBox(self.armFkChecker)==True:
-                    if i['type']=='FK':
-                        self.constTR(loc, advCtrl)
-                if self.queryCheckBox(self.armIkChecker)==True:
-                        if i['type']=='IK':
-                            self.constTR(loc, advCtrl)
-                        elif i['type']=='pole':
-                            cmds.setAttr(advCtrl+'.follow',0) #pole follow off, it might create weird double transform when it's on
-                            self.offsetPole(offsetGrp, moCapJnt,(0,-30,0))
-                            self.constTR(loc, advCtrl)
+                if i['type']=='FK':
+                    self.constTR(loc, advCtrl)
+                elif i['type']=='IK':
+                    self.constTR(loc, advCtrl)
+                elif i['type']=='pole':
+                    cmds.setAttr(advCtrl+'.followMain',10) #pole follow off, it might create weird double transform when it's on
+                    cmds.setAttr(advCtrl+'.followRoot',0) #pole follow off, it might create weird double transform when it's on
+                    cmds.setAttr(advCtrl+'.followChest',0) #pole follow off, it might create weird double transform when it's on
+                    cmds.setAttr(advCtrl+'.followArm',0) #pole follow off, it might create weird double transform when it's on
+                    self.offsetPole(offsetGrp, moCapJnt,(0,0,0))
+                    self.constTR(loc, advCtrl)
 
             if i['part']=='leg':
-                if self.queryCheckBox(self.legFkChecker)==True:
-                    if i['type']=='FK':
-                        self.constTR(loc, advCtrl)
-                if self.queryCheckBox(self.legIkChecker)==True:
-                        if i['type']=='IK':
-                            self.constTR(loc, advCtrl)
-                        elif i['type']=='pole':
-                            #cmds.setAttr(advCtrl+'.follow',0) #pole follow off
-                            if '_l' in i['name']:
-                                self.offsetPole(offsetGrp, moCapJnt,(0,0,0)) #0, -30, 0
-                            elif '_r' in i['name']:
-                                self.offsetPole(offsetGrp, moCapJnt,(0,0,0)) #0, 30, 0
-                            self.constTR(loc, advCtrl)
+                if i['type']=='FK':
+                    self.constTR(loc, advCtrl)
+                elif i['type']=='IK':
+                    self.constTR(loc, advCtrl)
+                elif i['type']=='pole':
+                    cmds.setAttr(advCtrl+'.followMain',10) #pole follow off
+                    cmds.setAttr(advCtrl+'.followRoot',0) #pole follow off
+                    cmds.setAttr(advCtrl+'.followLeg',0) #pole follow off
+                    if '_l' in i['name']:
+                        self.offsetPole(offsetGrp, moCapJnt,(0,0,0)) #0, -30, 0
+                    elif '_r' in i['name']:
+                        self.offsetPole(offsetGrp, moCapJnt,(0,0,0)) #0, 30, 0
+                    self.constTR(loc, advCtrl)
 
             if i['part']=='spine':
-                if self.queryCheckBox(self.spineFkChecker)==True:
-                    if i['type']=='FK':
-                        self.constTR(loc, advCtrl)
-                if self.queryCheckBox(self.spineIkChecker)==True:
-                        if i['type']=='IK':
-                            self.constTR(loc, advCtrl)
-                        elif i['type']=='pole':
-                            self.offsetPole(offsetGrp, moCapJnt)
-                            self.constTR(loc, advCtrl)
+                if i['type']=='FK':
+                    self.constTR(loc, advCtrl)
+                elif i['type']=='IK':
+                    self.constTR(loc, advCtrl)
+                elif i['type']=='pole':
+                    self.offsetPole(offsetGrp, moCapJnt)
+                    self.constTR(loc, advCtrl)
 
             if i['part']=='shoulder':
                 if i['type']=='FK':

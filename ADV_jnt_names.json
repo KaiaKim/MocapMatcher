@@ -2,6 +2,7 @@
   "nameList": [
     {"name": "Hip", "jnt": "Root_M"},
     {"name": "Chest_IK", "jnt": "Chest_M"},
+    {"name": "Spine2_IK", "jnt": "Spine1_M"},
     {"name": "Spine1_FK", "jnt": "Spine1_M"},
     {"name": "Chest_FK", "jnt": "Chest_M"},
     {"name": "Neck_FK", "jnt": "Neck_M"},

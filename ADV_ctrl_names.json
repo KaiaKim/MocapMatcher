@@ -2,6 +2,7 @@
   "nameList": [
     {"name": "Hip", "type": "IK", "part": "hip", "field1": null, "field2": null, "ctrl": "RootX_M"},
     {"name": "Chest_IK", "type": "IK", "part": "spine", "field1": null, "field2": null, "ctrl": "IKSpine3_M"},
+    {"name": "Spine2_IK", "type": "IK", "part": "spine", "field1": null, "field2": null, "ctrl": "IKSpine2_M"},
     {"name": "Spine1_FK", "type": "FK", "part": "spine", "field1": null, "field2": null, "ctrl": "FKSpine1_M"},
     {"name": "Chest_FK", "type": "FK", "part": "spine", "field1": null, "field2": null, "ctrl": "FKChest_M"},
     {"name": "Neck_FK", "type": "FK", "part": "head", "field1": null, "field2": null, "ctrl": "FKNeck_M"},
