@@ -1,0 +1,46 @@
+global string $gShelfTopLevel;
+string $currentShelf = `tabLayout -query -selectTab $gShelfTopLevel`;
+setParent $currentShelf;
+
+string $installLoc = `kaiaMocapMatcherInstallScriptLocation`;
+if (`gmatch $installLoc "*\\*"`)
+	$installLoc = `substituteAllString $installLoc "\\" "/"`;
+
+string $scriptName = "MocapMatcher";
+string $packageDir = $installLoc + "MocapMatcher";
+string $icon = $installLoc + "MocapMatcher/logo.png";
+
+if (!`file -q -ex ($packageDir + "/__init__.py")`)
+	error ("Something went wrong, can not find: \"" + $packageDir + "/__init__.py\"");
+if (!`file -q -ex $icon`)
+	$icon = "absolute.png";
+
+string $command = "import sys\nimport importlib\np = r'" + $installLoc + "'\nif p not in sys.path:\n\tsys.path.insert(0, p)\nimport MocapMatcher\nimportlib.reload(MocapMatcher)\nMocapMatcher.mocapMatcher()";
+
+shelfButton
+	-command $command
+	-annotation $scriptName
+	-label $scriptName
+	-image $icon
+	-image1 $icon
+	-sourceType "python"
+;
+
+print ("\n// " + $scriptName + " has been added to current shelf.\n");
+
+global proc kaiaMocapMatcherInstallScriptLocator (){}
+
+global proc string kaiaMocapMatcherInstallScriptLocation ()
+{
+	string $whatIs = `whatIs kaiaMocapMatcherInstallScriptLocator`;
+	string $fullPath = `substring $whatIs 25 999`;
+	string $buffer[];
+	string $slash = "/";
+	if (`gmatch $whatIs "*\\\\*"`)
+		$slash = "\\";
+	int $numTok = `tokenize $fullPath $slash $buffer`;
+	int $numLetters = size($fullPath);
+	int $numLettersLastFolder = size($buffer[$numTok - 1]);
+	string $scriptLocation = `substring $fullPath 1 ($numLetters - $numLettersLastFolder)`;
+	return $scriptLocation;
+}

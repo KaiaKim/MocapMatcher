@@ -1,8 +1,7 @@
 import maya.cmds as cmds
 import json
+import os
 #------------------------------------1.UI---------------------------------------------
-usd = cmds.internalVar(usd=True) #result: C:/Users/user/Documents/maya/2022/scripts/
-mayascripts = '%s/%s' % (usd.rsplit('/', 3)[0], 'scripts') #result: C:/Users/user/Documents/maya/scripts
 
 class mocapMatcher():
     def __init__(self):
@@ -13,7 +12,7 @@ class mocapMatcher():
         self.targetCtrlNameSpace = None
         
         
-        basePath = mayascripts+'/Kaia_MocapMatcher/'
+        basePath = os.path.dirname(__file__).replace('\\', '/') + '/'
         advCtrlPath = basePath + 'ADV_ctrl_names.json'
         advJntPath = basePath + 'ADV_jnt_names.json'
         self.cachePath = basePath + 'namespace_cache.json'
