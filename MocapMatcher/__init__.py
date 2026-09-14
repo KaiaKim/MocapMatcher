@@ -27,6 +27,7 @@ class mocapMatcher():
 
         ###
         self.bakeList = []
+        self.constList = []
         
         self.targetCtrlList = []
 
@@ -167,6 +168,7 @@ class mocapMatcher():
     def attachTargetCtrlsToLocs(self, _):
         self.saveNamespaceCache()
         self.bakeList = []
+        self.constList = []
         self.targetCtrlList = []
         
         cmds.currentTime(0)
@@ -243,13 +245,15 @@ class mocapMatcher():
 
     def constTR(self, loc, ctrl): #constraint translation and rotation
         try:
-            cmds.pointConstraint( loc, ctrl, maintainOffset=False )
+            pConst = cmds.pointConstraint( loc, ctrl, maintainOffset=False )[0]
+            self.constList.append(pConst)
         except Exception as e:
             print(e)
 
         
         try:
-            cmds.orientConstraint( loc, ctrl, maintainOffset=True )
+            oConst = cmds.orientConstraint( loc, ctrl, maintainOffset=True )[0]
+            self.constList.append(oConst)
         except Exception as e:
             print(e)
         self.bakeList.append(ctrl)
@@ -258,6 +262,7 @@ class mocapMatcher():
         minTime = cmds.playbackOptions(q=True, minTime=True)
         maxTime = cmds.playbackOptions(q=True, maxTime=True)
         cmds.bakeResults( self.bakeList, simulation=True, t=(minTime,maxTime) )
+        cmds.delete(self.constList)
 
 
 
